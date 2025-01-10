@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scalex Super (Vanilla JS) - Fixed Layout</title>
+    <style>
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 12px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(200px, 1fr));
+            gap: 8px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #1a1a1a;
+            padding: 8px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            height: fit-content;
+            min-width: 0;
+        }
+        .section h2 {
+            font-size: 0.9rem;
+            margin: 0 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #333;
+        }
+
+        .channel-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .channel-controls label {
+            font-size: 0.8rem;
+        }
+        #effect-controls label {
+            font-size: 0.8rem;
+        }
+        .control-element {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        .control-element label {
+            font-size: 0.8rem;
+            min-width: 60px;
+        }
+        button {
+            background-color: #333333;
+            border: 1px solid #666666;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: 0.2s;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        button:hover {
+            background-color: #444444;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 4px;
+            background: #444;
+            border-radius: 2px;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 12px;
+            width: 12px;
+            border-radius: 6px;
+            background: #666;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #888;
+        }
+        input[type="file"] {
+            font-size: 0.8rem;
+            width: 100%;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 4px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+        input[type="file"]::-webkit-file-upload-button {
+            background: #444;
+            border: 1px solid #666;
+            color: #e0e0e0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input[type="file"]::-webkit-file-upload-button:hover {
+            background: #555;
+        }
+        select {
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            border-radius: 4px;
+            padding: 4px;
+            border: 1px solid #444;
+            font-size: 0.8rem;
+            width: 100%;
+        }
+        input[type="file"] {
+            font-size: 0.8rem;
+            width: 100%;
+        }
+        span {
+            font-size: 0.8rem;
+        }
+        /* Specific layout overrides */
+         #scale-selector-section {
+            grid-column: span 1;
+        }
+        #sample-selector-section {
+            grid-column: span 1;
+        }
+        #rhythm-pattern-section {
+            grid-column: span 1;
+        }
+        #tempo-controls-section {
+            grid-column: span 1;
+        }
+        #channel-control-section {
+            grid-column: span 2;
+            display: flex;
+            flex-direction: column;
+        }
+        #channel-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+        }
+        #oscillator-control-section {
+            grid-column: span 1;
+        }
+        #effect-controls {
+            grid-column: span 1;
+        }
+        #recording-controls {
+            grid-column: span 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        #refresh-controls {
+            grid-column: span 1;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+  <div class="section" id="scale-selector-section">
+    <h2>Scale</h2>
+    <select id="scaleSelector">
+      <option value="Major">Major</option>
+      <option value="Minor">Minor</option>
+      <option value="Whole Tone">Whole Tone</option>
+      <option value="Chromatic">Chromatic</option>
+      <option value="Heptatonic">Heptatonic</option>
+      <option value="Harmonic Minor">Harmonic Minor</option>
+      <option value="Major Pentatonic">Major Pentatonic</option>
+      <option value="Prometheus">Prometheus</option>
+      <option value="Maqam Bayati">Maqam Bayati</option>
+      <option value="Persian Dastgāh-e Shūr">Persian Dastgāh-e Shūr</option>
+      <option value="Double Harmonic">Double Harmonic</option>
+      <option value="Raag Bhairavi">Raag Bhairavi</option>
+      <option value="Raga Marva">Raga Marva</option>
+      <option value="Balinese Pelog">Balinese Pelog</option>
+      <option value="Javanese Pelog">Javanese Pelog</option>
+      <option value="Slendro">Slendro</option>
+      <option value="Gamelan Umbang">Gamelan Umbang</option>
+      <option value="Selisir">Selisir</option>
+      <option value="Degung">Degung</option>
+      <option value="Thai">Thai</option>
+      <option value="Vietnamese Traditional">Vietnamese Traditional</option>
+      <option value="African Kumoi">African Kumoi</option>
+      <option value="African Pygmy">African Pygmy</option>
+      <option value="Ethiopian Tizita">Ethiopian Tizita</option>
+      <option value="Hirajoshi">Hirajoshi</option>
+      <option value="Iwato">Iwato</option>
+      <option value="Insen">Insen</option>
+      <option value="Ukrainian Dorian">Ukrainian Dorian</option>
+      <option value="Enigmatic">Enigmatic</option>
+      <option value="Phrygian Dominant">Phrygian Dominant</option>
+      <option value="Eight-Tone Spanish">Eight-Tone Spanish</option>
+      <option value="Hawaiian Slack Key">Hawaiian Slack Key</option>
+      <option value="Hungarian Gypsy">Hungarian Gypsy</option>
+      <option value="Melanesian">Melanesian</option>
+      <option value="Algerian">Algerian</option>
+      <option value="Tuvan">Tuvan</option>
+      <option value="Tibetan">Tibetan</option>
+      <option value="Chinese Pentatonic (宫)">Chinese Pentatonic (宫)</option>
+    </select>
+  </div>
+
+    <div class="section" id="sample-selector-section">
+      <h2>Samples</h2>
+      <div class="control-element">
+        <label for="sampleSelector">Select Sample:</label>
+      </div>
+        <button id="loadBasicSample">Basic</button>
+        <button id="loadDissonantSample">Dissonant</button>
+        <div class="control-element">
+            <label for="customSampleUpload">Custom Sample:</label>
+            <input type="file" id="customSampleUpload" accept="audio/*">
+        </div>
+    </div>
+
+  <div class="section" id="rhythm-pattern-section">
+    <h2>Rhythm</h2>
+    <select id="rhythmPatternSelector">
+      <option value="Regular">Regular</option>
+      <option value="Dotted">Dotted</option>
+      <option value="Triplet">Triplet</option>
+      <option value="Swing">Swing</option>
+      <option value="Syncopated">Syncopated</option>
+      <option value="Complex">Complex</option>
+      <option value="Polyrhythm">Polyrhythm</option>
+    </select>
+  </div>
+
+  <div class="section" id="tempo-controls-section">
+    <h2>Tempo</h2>
+      <div class="control-element">
+            <label for="tempoSlider">Tempo (BPM):</label>
+            <input type="range" id="tempoSlider" min="100" max="1000" value="500" step="10">
+            <span id="tempoDisplay">500</span>
+      </div>
+    <div class="control-element">
+        <label><input type="checkbox" id="autoTempoCheckbox">Xhabarabot Mode</label>
+    </div>
+  </div>
+
+  <div class="section" id="channel-control-section">
+    <h2>Channel Controls</h2>
+    <div id="channel-container">
+        </div>
+  </div>
+
+    <div class="section" id="oscillator-control-section">
+      <h2>Oscillator</h2>
+        <div class="channel-controls">
+            <div class="control-element">
+                <button id="autoOscButton">Auto 0</button>
+            </div>
+            <div class="control-element">
+                <button id="noteOscButton">Note 0</button>
+            </div>
+            <div class="control-element">
+                <button id="octaveOscButton">Octave</button>
+                <span id="octaveOscDisplay">0</span>
+            </div>
+        </div>
+    </div>
+
+  <div class="section" id="effect-controls">
+      <h2>Effects</h2>
+      <div class="control-element">
+          <label><input type="checkbox" id="syncCheckbox">Sync</label>
+      </div>
+      <div class="control-element">
+          <label><input type="checkbox" id="reverbCheckbox">Reverb</label>
+      </div>
+        <div class="control-element">
+            <label for="sampleVolumeSlider">Sample Volume:</label>
+            <input type="range" id="sampleVolumeSlider" min="0" max="2" value="1" step="0.01">
+          <span id="sampleVolumeDisplay">1.00</span>
+        </div>
+      <div class="control-element">
+            <label for="oscVolumeSlider">Osc Volume:</label>
+          <input type="range" id="oscVolumeSlider" min="0" max="1" value="0.2" step="0.01">
+          <span id="oscVolumeDisplay">0.20</span>
+      </div>
+  </div>
+
+    <div class="section" id="recording-controls">
+      <h2>Record</h2>
+        <button id="recordMixButton">Start/Stop Mix</button>
+        <button id="recordStemsButton">Record Stems</button>
+  </div>
+
+  <div class="section" id="refresh-controls">
+        <button id="refreshButton">REFRESH</button>
+    </div>
+</div>
+
+<script>
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+    sampleRate: 44100,
+  });
+  audioContext.outBuffer = 2048;
+  audioContext.bufferSize = 2048;
+  audioContext.latencyHint = 'playback';
+
+  let scales = {
+    "Major": [0, 2, 4, -1, 5, 7, 9, -1, 11, 12],
+    "Minor": [0, 2, -1, 3, 5, 7, -1, 8, 10, 12],
+    "Whole Tone": [0, 2, -1, 4, 6, -1, 8, 10, -1, 12],
+    "Chromatic": [0, 1, 2, -1, 3, 4, 5, -1, 6, 7, 8, -1, 9, 10, 11, -1, 12],
+    "Heptatonic": [0, 2, -1, 4, 5, -1, 7, 9, -1, 10],
+    "Harmonic Minor": [0, 2, -1, 3, 5, 7, -1, 8, 11, -1, 12],
+    "Major Pentatonic": [0, -1, 2, 4, -1, 7, -1, 9],
+    "Prometheus": [0, 2, 4, -1, 6, 9, -1, 10, 12],
+    "Maqam Bayati": [0, 1.5, -1, 3, 5, -1, 7, 8.5, -1, 10],
+    "Persian Dastgāh-e Shūr": [0, 1.5, 4, -1, 5, 6.5, -1, 8, 10, -1, 11.5, 12],
+    "Double Harmonic": [0, 1.5, -1, 4, 5, -1, 7, 8.5, -1, 11, 12],
+    "Raag Bhairavi": [0, 1.2, -1, 2.8, 5, -1, 7, 7.8, -1, 10],
+    "Raga Marva": [0, 1.2, -1, 4, 6, -1, 7, 9, -1, 11.2],
+    "Balinese Pelog": [0, 1.2, -1, 3.2, 7.2, -1, 8.2, -1],
+    "Javanese Pelog": [0, 1.3, 3.4, -1, 7.3, -1, 8.2],
+    "Slendro": [0, 2.4, -1, 4.8, -1, 7.2, 9.6, -1],
+    "Gamelan Umbang": [0, 1.2, -1, 3.4, -1, 6.8, 7.2, -1],
+    "Selisir": [0, 1.3, -1, 3.2, 7.2, -1, 8.3, -1, 10.2],
+    "Degung": [0, 2.2, -1, 4.4, 7.2, -1, 9.2, -1, 10.4],
+    "Thai": [0, 2.3, -1, 3.5, 6.5, -1, 7.2, 8.5, -1, 10.5],
+    "Vietnamese Traditional": [0, 3.2, -1, 5.3, 6.2, -1, 7, 10.2, -1],
+      "African Kumoi": [0, 2.2, -1, 3.5, -1, 7.2, -1, 9.3],
+      "African Pygmy": [0, -1, 3.2, 5.3, -1, 7.2, -1, 10.3],
+    "Ethiopian Tizita": [0, 2.3, -1, 4.4, 6.5, -1, 8.2, -1, 10.3],
+    "Hirajoshi": [0, 2, -1, 3, 7, -1, 8, -1],
+    "Iwato": [0, 1, -1, 5, -1, 6, 10, -1],
+    "Insen": [0, 1, -1, 5, 7, -1, 10, -1],
+    "Ukrainian Dorian": [0, 2, -1, 3, 6, -1, 7, 9, -1, 10, 12],
+    "Enigmatic": [0, 1, -1, 4, 6, -1, 8, 10, -1, 11],
+      "Phrygian Dominant": [0, 1, 4, -1, 5, 7, -1, 8, 10, -1, 12],
+    "Eight-Tone Spanish": [0, 1, -1, 3, 4, -1, 5, 6, 8, -1, 10, 12],
+    "Hawaiian Slack Key": [0, 2, -1, 3, 5, -1, 7, 10, -1, 12],
+    "Hungarian Gypsy": [0, 2, -1, 3, 6, -1, 7, 8, -1, 11, 12],
+    "Melanesian": [0, 2, -1, 5, -1, 7, -1, 9],
+    "Algerian": [0, 2, -1, 3, 5, 6, -1, 7, 8, -1, 11, 12],
+      "Tuvan": [0, 2, -1, 4, 7, -1, 9, -1, 11],
+      "Tibetan": [0, 2, -1, 5, 7, -1, 8, -1, 10],
+      "Chinese Pentatonic (宫)": [0, 2, -1, 4, 7, -1, 9, 12]
+  };
+
+  let rhythmPatterns = {
+    "Regular": [1],
+    "Dotted": [1.5, 0.5],
+    "Triplet": [0.33, 0.33, 0.33],
+    "Swing": [0.6, 0.4],
+    "Syncopated": [0.75, 0.25, 0.5, 0.5],
+    "Complex": [0.3, 0.3, 0.2, 0.2],
+    "Polyrhythm": [0.33, 0.25, 0.42]
+  };
+
+
+   let appState = {
+      masterSampleBuffer: null,
+      customSampleName: null,
+      scale: "Major",
+      rhythmPattern: "Regular",
+      tempo: 500,
+      autoTempoMode: false,
+      autoTempoIntervalId: null,
+      reverbEnabled: false,
+      syncEnabled: false,
+      sampleVolume: 1,
+      oscVolume: 0.2,
+      isRecording: false,
+      recordMixStartTime: 0,
+      recordMixBuffer: [],
+       stemRecorders: [],
+      stemRecordings: [[], [], []],
+      channels: [
+        { auto: false, octave: 0, pan: 0, muted: false, intervalId: null } ,
+        { auto: false, octave: 0, pan: 0, muted: false, intervalId: null },
+        { auto: false, octave: 0, pan: 0, muted: false, intervalId: null },
+      ],
+       osc: { auto: false, octave: 0, intervalId: null },
+
+    };
+
+
+// DOM Elements
+  const scaleSelector = document.getElementById('scaleSelector');
+  const rhythmPatternSelector = document.getElementById('rhythmPatternSelector');
+  const tempoSlider = document.getElementById('tempoSlider');
+  const tempoDisplay = document.getElementById('tempoDisplay');
+  const autoTempoCheckbox = document.getElementById('autoTempoCheckbox');
+  const reverbCheckbox = document.getElementById('reverbCheckbox');
+  const syncCheckbox = document.getElementById('syncCheckbox');
+  const sampleVolumeSlider = document.getElementById('sampleVolumeSlider');
+  const sampleVolumeDisplay = document.getElementById('sampleVolumeDisplay');
+  const oscVolumeSlider = document.getElementById('oscVolumeSlider');
+    const oscVolumeDisplay = document.getElementById('oscVolumeDisplay');
+  const loadBasicSampleButton = document.getElementById('loadBasicSample');
+    const loadDissonantSampleButton = document.getElementById('loadDissonantSample');
+  const customSampleUpload = document.getElementById('customSampleUpload');
+    const recordMixButton = document.getElementById('recordMixButton');
+    const recordStemsButton = document.getElementById('recordStemsButton');
+    const refreshButton = document.getElementById('refreshButton');
+   const channelContainer = document.getElementById('channel-container');
+    const autoOscButton = document.getElementById('autoOscButton');
+    const noteOscButton = document.getElementById('noteOscButton');
+    const octaveOscButton = document.getElementById('octaveOscButton');
+    const octaveOscDisplay = document.getElementById('octaveOscDisplay');
+
+   // Reverb setup
+  let reverbEffect = audioContext.createConvolver();
+  loadImpulseResponse('/assets/ir.wav').then(buffer => {
+      reverbEffect.buffer = buffer;
+  });
+
+
+   // Limiter setup
+  let masterLimiter = audioContext.createDynamicsCompressor();
+  masterLimiter.threshold.value = -24;
+  masterLimiter.ratio.value = 12;
+  masterLimiter.attack.value = 0.003;
+  masterLimiter.release.value = 0.25;
+  masterLimiter.connect(audioContext.destination);
+
+  let masterGain = audioContext.createGain();
+    masterGain.gain.value = 0.7;
+    masterGain.connect(masterLimiter);
+
+
+     // Oscillator Setup
+  let osc;
+  let oscGain = audioContext.createGain();
+  oscGain.gain.value = appState.oscVolume;
+
+  function initOscillator() {
+    if (osc) {
+      osc.stop();
+      osc.disconnect();
+    }
+    osc = audioContext.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = 440;
+    osc.connect(oscGain);
+    if (appState.reverbEnabled) {
+      oscGain.disconnect();
+      oscGain.connect(reverbEffect);
+    } else {
+      oscGain.disconnect();
+      oscGain.connect(masterGain);
+    }
+    osc.start();
+  }
+
+
+
+    // Utility Functions
+
+  function loadImpulseResponse(url) {
+      return fetch(url)
+          .then(response => response.arrayBuffer())
+          .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer));
+  }
+
+  async function loadSample(url) {
+      const response = await fetch(url);
+      const arrayBuffer = await response.arrayBuffer();
+      return await audioContext.decodeAudioData(arrayBuffer);
+  }
+
+    function createChannelControls(index) {
+        const channelDiv = document.createElement('div');
+        channelDiv.className = 'channel-controls';
+        channelDiv.innerHTML = `
+            <h3>Channel ${index + 1}</h3>
+            <div class="control-element">
+                <button id="autoButton${index}">Auto</button>
+            </div>
+            <div class="control-element">
+                <button id="noteButton${index}">Note</button>
+            </div>
+            <div class="control-element">
+                <button id="octaveButton${index}">Octave</button>
+                <span id="octaveDisplay${index}">0</span>
+            </div>
+             <div class="control-element">
+              <label for="panSlider${index}">Pan:</label>
+              <input type="range" id="panSlider${index}" min="-1" max="1" value="0" step="0.1">
+              <span id="panDisplay${index}">0</span>
+              </div>
+            <div class="control-element">
+                <label><input type="checkbox" id="muteCheckbox${index}">Mute</label>
+            </div>
+        `;
+        channelContainer.appendChild(channelDiv);
+
+        const autoButton = document.getElementById(`autoButton${index}`);
+        const noteButton = document.getElementById(`noteButton${index}`);
+        const octaveButton = document.getElementById(`octaveButton${index}`);
+        const octaveDisplay = document.getElementById(`octaveDisplay${index}`);
+        const panSlider = document.getElementById(`panSlider${index}`);
+        const panDisplay = document.getElementById(`panDisplay${index}`);
+        const muteCheckbox = document.getElementById(`muteCheckbox${index}`);
+
+        autoButton.addEventListener('click', () => toggleAutoLoop(index));
+        noteButton.addEventListener('click', () => playRandomPitch(index));
+        octaveButton.addEventListener('click', () => changeOctave(index, octaveDisplay));
+        panSlider.addEventListener('input', () => {
+             appState.channels[index].pan = parseFloat(panSlider.value);
+             panDisplay.textContent =  appState.channels[index].pan.toFixed(1);
+        });
+        muteCheckbox.addEventListener('change', () => toggleMute(index));
+    }
+
+   function setupChannels() {
+        for (let i = 0; i < 3; i++) {
+          createChannelControls(i);
+        }
+    }
+
+    function updateDisplayValues() {
+      tempoDisplay.textContent = appState.tempo;
+       sampleVolumeDisplay.textContent = appState.sampleVolume.toFixed(2);
+       oscVolumeDisplay.textContent = appState.oscVolume.toFixed(2);
+        octaveOscDisplay.textContent = appState.osc.octave;
+
+    }
+
+  function playRandomPitch(index) {
+      if (!appState.masterSampleBuffer || appState.channels[index].muted) return;
+
+      const source = audioContext.createBufferSource();
+      source.buffer = appState.masterSampleBuffer;
+
+      const gainNode = audioContext.createGain();
+      source.connect(gainNode);
+
+
+      const panNode = audioContext.createStereoPanner();
+      panNode.pan.value =  appState.channels[index].pan;
+      gainNode.connect(panNode);
+        panNode.connect(appState.reverbEnabled ? reverbEffect : masterGain);
+
+
+    let scale = scales[appState.scale];
+
+    let randomPitch = scale[Math.floor(Math.random() * scale.length)];
+    let octaveAdjustment = appState.channels[index].octave * 12;
+
+    let playbackRate = Math.pow(2, (randomPitch + octaveAdjustment) / 12);
+    source.playbackRate.value = playbackRate;
+       gainNode.gain.value =  appState.sampleVolume;
+
+        source.start(0);
+
+      if (appState.isRecording) {
+         recordMix(source);
+      }
+
+    if (appState.isRecording){
+        recordStem(source, index);
+    }
+  }
+
+
+  function playOscillatorNote() {
+    if (!osc) {
+      initOscillator();
+    }
+    let scale = scales[appState.scale];
+    let randomPitch = scale[Math.floor(Math.random() * scale.length)];
+    while (randomPitch === -1) {
+      randomPitch = scale[Math.floor(Math.random() * scale.length)];
+    }
+    let octaveAdjustment = appState.osc.octave * 12;
+    let newFreq = 440 * Math.pow(2, (randomPitch + octaveAdjustment) / 12);
+    osc.frequency.setValueAtTime(newFreq, audioContext.currentTime);
+
+    if (appState.isRecording) {
+      recordMix(osc);
+    }
+  }
+
+  function toggleAutoLoop(index) {
+    const channel = appState.channels[index];
+    const autoButton = document.getElementById(`autoButton${index}`);
+    channel.auto = !channel.auto;
+    
+    if (channel.auto) {
+        startLoop(index);
+        autoButton.style.backgroundColor = '#4CAF50';
+    } else {
+        stopLoop(index);
+        autoButton.style.backgroundColor = '#333333';
+    }
+}
+
+   function startLoop(index) {
+    const channel = appState.channels[index];
+       const rhythm = rhythmPatterns[appState.rhythmPattern];
+        let rhythmIndex = 0;
+
+       const playNextNote = () => {
+            playRandomPitch(index);
+            const tempoMultiplier = rhythm[rhythmIndex % rhythm.length];
+             rhythmIndex++;
+              const time = (60 / appState.tempo) * tempoMultiplier * 1000;
+            channel.intervalId = setTimeout(playNextNote, time);
+        };
+        playNextNote();
+}
+
+
+  function stopLoop(index) {
+    const channel = appState.channels[index];
+    if(channel.intervalId){
+        clearTimeout(channel.intervalId);
+        channel.intervalId = null;
+    }
+  }
+   function toggleOscLoop() {
+       appState.osc.auto = !appState.osc.auto;
+
+    if (appState.osc.auto) {
+       startOscillatorLoop();
+    } else {
+        stopOscillatorLoop();
+    }
+  }
+
+    function startOscillatorLoop() {
+          const rhythm = rhythmPatterns[appState.rhythmPattern];
+        let rhythmIndex = 0;
+        const playNextNote = () => {
+            playOscillatorNote();
+            const tempoMultiplier = rhythm[rhythmIndex % rhythm.length];
+             rhythmIndex++;
+              const time = (60 / appState.tempo) * tempoMultiplier * 1000;
+            appState.osc.intervalId = setTimeout(playNextNote, time);
+        };
+        playNextNote();
+    }
+
+    function stopOscillatorLoop() {
+    if(appState.osc.intervalId){
+        clearTimeout(appState.osc.intervalId);
+        appState.osc.intervalId = null;
+    }
+  }
+
+
+
+   function changeOctave(index, displayElement) {
+    const octaves = [0, -1, -2, 1, 2];
+    const signs = ["0", "-", "--", "+", "++"];
+    let currentIndex = octaves.indexOf(appState.channels[index].octave);
+    currentIndex = (currentIndex + 1) % octaves.length;
+    appState.channels[index].octave = octaves[currentIndex];
+    displayElement.textContent = signs[currentIndex];
+}
+
+  function changeOscOctave() {
+    const octaves = [0, -1, -2, 1, 2];
+    const signs = ["0", "-", "--", "+", "++"];
+    let currentIndex = octaves.indexOf(appState.osc.octave);
+    currentIndex = (currentIndex + 1) % octaves.length;
+    appState.osc.octave = octaves[currentIndex];
+    octaveOscDisplay.textContent = signs[currentIndex];
+}
+
+  function toggleMute(index) {
+    appState.channels[index].muted = !appState.channels[index].muted;
+  }
+
+    function toggleReverb() {
+        appState.reverbEnabled = !appState.reverbEnabled;
+        if (appState.reverbEnabled) {
+            masterGain.disconnect();
+            masterGain.connect(reverbEffect);
+            reverbEffect.connect(masterLimiter);
+        } else {
+            masterGain.disconnect();
+            reverbEffect.disconnect();
+            masterGain.connect(masterLimiter);
+        }
+        if (osc) {
+            initOscillator(); // Reconnect oscillator with new routing
+        }
+    }
+
+    function syncLoops() {
+    if (appState.syncEnabled) {
+        for (let i = 0; i < 3; i++) {
+            if (appState.channels[i].intervalId) {
+                stopLoop(i);
+               startLoop(i);
+            }
+        }
+
+        if(appState.osc.intervalId){
+            stopOscillatorLoop();
+           startOscillatorLoop();
+        }
+
+        }
+}
+
+function toggleAutoTempo() {
+        appState.autoTempoMode = !appState.autoTempoMode;
+
+  if (appState.autoTempoMode) {
+        appState.autoTempoIntervalId = setInterval(() => {
+                let newTempo = Math.floor(Math.random() * (1000 - 100 + 1)) + 100;
+          appState.tempo = newTempo;
+          tempoSlider.value = newTempo;
+            updateDisplayValues();
+          syncLoops();
+
+        }, 30000);
+  } else {
+    clearInterval(appState.autoTempoIntervalId);
+    appState.autoTempoIntervalId = null;
+   syncLoops();
+
+  }
+}
+
+  function resetApp() {
+    for (let i = 0; i < 3; i++) {
+      stopLoop(i);
+    }
+      stopOscillatorLoop();
+      appState = {
+          masterSampleBuffer: null,
+          customSampleName: null,
+          scale: "Major",
+          rhythmPattern: "Regular",
+          tempo: 500,
+          autoTempoMode: false,
+          autoTempoIntervalId: null,
+          reverbEnabled: false,
+          syncEnabled: false,
+          sampleVolume: 1,
+          oscVolume: 0.2,
+          isRecording: false,
+          recordMixStartTime: 0,
+          recordMixBuffer: [],
+          stemRecorders: [],
+          stemRecordings: [[], [], []],
+          channels: [
+              { auto: false, octave: 0, pan: 0, muted: false, intervalId: null } ,
+              { auto: false, octave: 0, pan: 0, muted: false, intervalId: null },
+              { auto: false, octave: 0, pan: 0, muted: false, intervalId: null },
+          ],
+          osc: { auto: false, octave: 0, intervalId: null },
+
+      };
+     tempoSlider.value = 500;
+     sampleVolumeSlider.value = 1;
+     oscVolumeSlider.value = 0.2;
+      updateDisplayValues();
+    }
+
+    // Recording Functions
+
+    function initRecording () {
+             mixStreamDestination = audioContext.createMediaStreamDestination();
+            masterGain.connect(mixStreamDestination);
+
+             for (let i=0; i < 3; i++) {
+                 stemStreamDestinations[i] = audioContext.createMediaStreamDestination();
+            }
+        }
+
+
+           function startRecording() {
+               if(mixStreamDestination == undefined){
+                    initRecording();
+               }
+               appState.isRecording = true;
+               recordMixButton.textContent = 'Stop Mix';
+               appState.recordMixBuffer = [];
+
+               mixRecorder = new MediaRecorder(mixStreamDestination.stream, {mimeType: 'audio/wav'});
+               mixRecorder.ondataavailable = (event) => {
+                   if(event.data.size > 0){
+                       appState.recordMixBuffer.push(event.data);
+                   }
+               };
+
+               mixRecorder.onstop = () => {
+                   saveMix();
+               }
+
+               mixRecorder.start(100); // Start recording
+
+           }
+
+
+
+      function startStemRecording(){
+          appState.isRecording = true;
+          recordStemsButton.textContent = 'Stop Recording Stems';
+           appState.stemRecordings = [[], [], []];
+            for (let i = 0; i < 3; i++) {
+               stemRecorders[i] = new MediaRecorder(stemStreamDestinations[i].stream, {mimeType: 'audio/wav'});
+               stemRecorders[i].ondataavailable = (event) => {
+                     if (event.data.size > 0) {
+                         appState.stemRecordings[i].push(event.data);
+                     }
+                  };
+               stemRecorders[i].onstop = () => {
+                 saveStems();
+               };
+                  stemRecorders[i].start(100); // Start recording
+            }
+      }
+
+
+
+
+        function stopRecording() {
+            appState.isRecording = false;
+            recordMixButton.textContent = 'Start Mix';
+            mixRecorder.stop();
+        }
+
+
+
+         function stopStemRecording() {
+                appState.isRecording = false;
+                recordStemsButton.textContent = 'Record Stems';
+
+            stemRecorders.forEach(recorder => {
+                   if(recorder){
+                       recorder.stop();
+                       }
+              });
+            stemRecorders = [];
+        }
+
+    // Toggle Recording
+    function toggleRecording() {
+        if (appState.isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    }
+
+    // Save Mix
+    function saveMix() {
+        if (appState.recordMixBuffer.length === 0) return;
+
+        const mixBuffer = generateAudioBuffer(appState.recordMixBuffer);
+        const wavData = generateWavData(mixBuffer);
+        downloadBlob(wavData, `Mix_${new Date().toISOString().slice(0, 10)}.wav`);
+        appState.recordMixBuffer = [];
+    }
+
+    // Save Stems
+    function saveStems() {
+        appState.stemRecordings.forEach((stemData, index) => {
+            if (stemData.length > 0) {
+                const stemBuffer = generateAudioBuffer(stemData);
+                const wavData = generateWavData(stemBuffer);
+                downloadBlob(wavData, `Stem_${index + 1}_${new Date().toISOString().slice(0, 10)}.wav`);
+            }
+        });
+        appState.stemRecordings = [[], [], []];
+    }
+
+    // Generate Audio Buffer
+    function generateAudioBuffer(recordingData) {
+        const channels = 2;
+        const sampleRate = audioContext.sampleRate;
+        const frameCount = recordingData.length / channels;
+
+        const audioBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
+        for (let i = 0; i < channels; i++) {
+            const channelData = audioBuffer.getChannelData(i);
+            for (let j = 0; j < frameCount; j++) {
+                channelData[j] = recordingData[j * channels + i];
+            }
+        }
+        return audioBuffer;
+    }
+
+    // Generate WAV Data
+    function generateWavData(audioBuffer) {
+        const numChannels = audioBuffer.numberOfChannels;
+        const sampleRate = audioBuffer.sampleRate;
+        const numFrames = audioBuffer.length;
+
+        const wavHeaderSize = 44;
+        const buffer = new ArrayBuffer(wavHeaderSize + numFrames * numChannels * 2);
+        const view = new DataView(buffer);
+
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, buffer.byteLength - 8, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true); // PCM header size
+        view.setUint16(20, 1, true); // PCM format
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * 2, true); // Byte rate
+        view.setUint16(32, numChannels * 2, true); // Block align
+        view.setUint16(34, 16, true); // Bits per sample
+        writeString(view, 36, 'data');
+        view.setUint32(40, numFrames * numChannels * 2, true);
+
+        let offset = wavHeaderSize;
+        for (let i = 0; i < numFrames; i++) {
+            for (let ch = 0; ch < numChannels; ch++) {
+                const sample = audioBuffer.getChannelData(ch)[i];
+                const intSample = Math.max(-1, Math.min(1, sample)) < 0
+                    ? sample * 0x8000
+                    : sample * 0x7FFF;
+                view.setInt16(offset, intSample, true);
+                offset += 2;
+            }
+        }
+
+        return buffer;
+    }
+
+    // Helper Function to Write Strings
+    function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+
+    // Download Blob
+    function downloadBlob(blobData, filename) {
+        const blob = new Blob([blobData], { type: 'audio/wav' });
+        const url = URL.createObjectURL(blob);
+
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+
+        URL.revokeObjectURL(url);
+    }
+
+
+
+           function toggleRecording() {
+               appState.isRecording = !appState.isRecording;
+
+             if(appState.isRecording){
+                   appState.recordMixStartTime = performance.now();
+                   recordMixButton.textContent = 'Stop Recording';
+             } else {
+                    saveAndExport();
+                    recordMixButton.textContent = 'Start Recording';
+             }
+
+
+             }
+
+             function toggleStemRecording() {
+    appState.isRecording = !appState.isRecording;
+    if (!appState.isRecording) {
+        saveStems();
+        recordStemsButton.textContent = 'Record Stems';
+    } else {
+        appState.stemRecordings = [[],[],[]];
+        recordStemsButton.textContent = 'Stop Recording Stems';
+    }
+}
+
+
+           // Event Listeners
+
+             scaleSelector.addEventListener('change', (e) => {
+               appState.scale = e.target.value;
+             });
+
+           rhythmPatternSelector.addEventListener('change', (e) => {
+               appState.rhythmPattern = e.target.value;
+             });
+
+           tempoSlider.addEventListener('input', () => {
+             appState.tempo = parseInt(tempoSlider.value);
+             updateDisplayValues();
+             syncLoops();
+           });
+
+
+           autoTempoCheckbox.addEventListener('change', toggleAutoTempo);
+
+
+           reverbCheckbox.addEventListener('change', toggleReverb);
+           syncCheckbox.addEventListener('change', () => {
+               appState.syncEnabled = !appState.syncEnabled;
+               syncLoops();
+
+           });
+            sampleVolumeSlider.addEventListener('input', () => {
+                appState.sampleVolume = parseFloat(sampleVolumeSlider.value);
+                updateDisplayValues();
+            });
+             oscVolumeSlider.addEventListener('input', () => {
+                 appState.oscVolume = parseFloat(oscVolumeSlider.value);
+                  oscGain.gain.value = appState.oscVolume;
+                 updateDisplayValues();
+             });
+
+           loadBasicSampleButton.addEventListener('click', async () => {
+              appState.masterSampleBuffer = await loadSample('/assets/RullyShabaraSampleV02.mp3');
+                 appState.customSampleName = 'RullyShabaraSampleV02';
+
+           });
+
+           loadDissonantSampleButton.addEventListener('click', async () => {
+               appState.masterSampleBuffer = await loadSample('/assets/RullyShabaraSampleF03.mp3');
+               appState.customSampleName = 'RullyShabaraSampleF03';
+           });
+           customSampleUpload.addEventListener('change', async (e) => {
+                 const file = e.target.files[0];
+                 if (file && file.type.startsWith('audio/')) {
+                     const arrayBuffer = await file.arrayBuffer();
+                     appState.masterSampleBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                       appState.customSampleName = file.name.split('.')[0];
+                 } else {
+                     alert('Please upload a valid audio file.');
+                 }
+             });
+             recordMixButton.addEventListener('click', toggleRecording);
+             recordStemsButton.addEventListener('click', toggleStemRecording);
+           refreshButton.addEventListener('click', () => window.location.reload());
+           autoOscButton.addEventListener('click', toggleOscLoop);
+           noteOscButton.addEventListener('click', playOscillatorNote);
+           octaveOscButton.addEventListener('click', changeOscOctave);
+
+          setupChannels();
+             updateDisplayValues();
+
+
+         </script>
+         </body>
+         </html>
