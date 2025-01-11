@@ -768,83 +768,109 @@ function toggleAutoTempo() {
 
     // Recording Functions
 
-      function initRecording () {
-             mixStreamDestination = audioContext.createMediaStreamDestination();
-            
-             for (let i=0; i < 3; i++) {
-                 stemStreamDestinations[i] = audioContext.createMediaStreamDestination();
-            }
-             masterGain.connect(masterLimiter);
-        }
+      let mixRecorder = null;
+let mixStreamDestination = null;
+let stemStreamDestinations = [];
+let stemRecorders = [];
 
-    let mixRecorder;
-    let mixStreamDestination;
-    let stemStreamDestinations = [];
-     let stemRecorders = [];
+function initRecording() {
+    // Create media stream destinations if they don't exist
+    if (!mixStreamDestination) {
+        mixStreamDestination = audioContext.createMediaStreamDestination();
+    }
+    
+    // Clear existing stem destinations
+    stemStreamDestinations = [];
+    // Create new stem destinations for each channel
+    for (let i = 0; i < 3; i++) {
+        stemStreamDestinations[i] = audioContext.createMediaStreamDestination();
+    }
+}
 
            function startRecording() {
-               if(mixStreamDestination == undefined){
-                    initRecording();
-               }
-               appState.isRecording = true;
-               recordMixButton.textContent = 'Stop Mix';
-               appState.recordMixBuffer = [];
-                masterGain.disconnect();
-                masterGain.connect(mixStreamDestination);
+    if (!mixStreamDestination) {
+        initRecording();
+    }
+    
+    appState.isRecording = true;
+    recordMixButton.textContent = 'Stop Mix';
+    appState.recordMixBuffer = [];
 
-               mixRecorder = new MediaRecorder(mixStreamDestination.stream, {mimeType: 'audio/wav'});
-               mixRecorder.ondataavailable = (event) => {
-                   if(event.data.size > 0){
-                       appState.recordMixBuffer.push(event.data);
-                   }
-               };
-
-               mixRecorder.onstop = () => {
-                  masterGain.disconnect();
-                   masterGain.connect(masterLimiter);
-                   saveMix();
-               }
-
-               mixRecorder.start(100); // Start recording
-
-           }
-      function startStemRecording(){
-          appState.isRecording = true;
-          recordStemsButton.textContent = 'Stop Recording Stems';
-           appState.stemRecordings = [[], [], []];
-            for (let i = 0; i < 3; i++) {
-                 stemRecorders[i] = new MediaRecorder(stemStreamDestinations[i].stream, {mimeType: 'audio/wav'});
-                 stemRecorders[i].ondataavailable = (event) => {
-                       if (event.data.size > 0) {
-                           appState.stemRecordings[i].push(event.data);
-                       }
-                    };
-                 stemRecorders[i].onstop = () => {
-                   saveStems();
-                 };
-               }
-            masterGain.disconnect();
-            masterGain.connect(masterLimiter);
-
-         }
-        function stopRecording() {
-            appState.isRecording = false;
-            recordMixButton.textContent = 'Start Mix';
-            mixRecorder.stop();
+    // Connect to recording destination while maintaining original output
+    masterGain.connect(mixStreamDestination);
+    
+    // Create and configure MediaRecorder
+    mixRecorder = new MediaRecorder(mixStreamDestination.stream);
+    
+    mixRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            appState.recordMixBuffer.push(event.data);
         }
-         function stopStemRecording() {
-                appState.isRecording = false;
-                recordStemsButton.textContent = 'Record Stems';
+    };
+    
+    mixRecorder.onstop = () => {
+        saveMix();
+    };
+    
+    // Start recording with a reasonable timeslice
+    mixRecorder.start(1000);
+}
 
-            stemRecorders.forEach(recorder => {
-                   if(recorder){
-                       recorder.stop();
-                       }
-              });
-            masterGain.disconnect();
-             masterGain.connect(masterLimiter);
-            stemRecorders = [];
+function startStemRecording() {
+    if (stemStreamDestinations.length === 0) {
+        initRecording();
+    }
+    
+    appState.isRecording = true;
+    recordStemsButton.textContent = 'Stop Recording Stems';
+    appState.stemRecordings = [[], [], []];
+    
+    // Create and start recorders for each stem
+    stemRecorders = stemStreamDestinations.map((destination, index) => {
+        const recorder = new MediaRecorder(destination.stream);
+        
+        recorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                appState.stemRecordings[index].push(event.data);
+            }
+        };
+        
+        recorder.onstop = () => {
+            saveStems();
+        };
+        
+        recorder.start(1000);
+        return recorder;
+    });
+}
+
+function stopRecording() {
+    if (!appState.isRecording) return;
+    
+    appState.isRecording = false;
+    recordMixButton.textContent = 'Start Mix';
+    
+    if (mixRecorder && mixRecorder.state === 'recording') {
+        mixRecorder.stop();
+        masterGain.disconnect(mixStreamDestination);
+    }
+}
+
+function stopStemRecording() {
+    if (!appState.isRecording) return;
+    
+    appState.isRecording = false;
+    recordStemsButton.textContent = 'Record Stems';
+    
+    stemRecorders.forEach(recorder => {
+        if (recorder && recorder.state === 'recording') {
+            recorder.stop();
         }
+    });
+    
+    // Clear recorders array
+    stemRecorders = [];
+}
 
     function toggleRecording() {
        if (appState.isRecording) {
@@ -862,44 +888,50 @@ function toggleAutoTempo() {
     }
     
     function saveMix() {
-             if (appState.recordMixBuffer.length === 0) return;
+    if (appState.recordMixBuffer.length === 0) return;
+    
+    const blob = new Blob(appState.recordMixBuffer, { type: 'audio/wav' });
+    const fileName = `Mix_${new Date().toISOString().slice(0, -5).replace(/[:]/g, '-')}.wav`;
+    downloadBlob(blob, fileName);
+    
+    // Clear the buffer after saving
+    appState.recordMixBuffer = [];
+}
 
-              const blob = new Blob(appState.recordMixBuffer, { type: 'audio/wav' });
-               downloadBlob(blob, `Mix_${new Date().toISOString().slice(0, 10)}.wav`);
-               appState.recordMixBuffer = [];
+function saveStems() {
+    appState.stemRecordings.forEach((stemData, index) => {
+        if (stemData.length > 0) {
+            const blob = new Blob(stemData, { type: 'audio/wav' });
+            const fileName = `Stem_${index + 1}_${new Date().toISOString().slice(0, -5).replace(/[:]/g, '-')}.wav`;
+            downloadBlob(blob, fileName);
         }
+    });
+    
+    // Clear recordings after saving
+    appState.stemRecordings = [[], [], []];
+}
 
-        // Save Stems
-        function saveStems() {
-          appState.stemRecordings.forEach((stemData, index) => {
-            if (stemData.length > 0) {
-              const blob = new Blob(stemData, { type: 'audio/wav' });
-              downloadBlob(blob, `Stem_${index + 1}_${new Date().toISOString().slice(0, 10)}.wav`);
-               }
-              });
-        appState.stemRecordings = [[], [], []];
-        }
-            function recordStem(source, index) {
-              if(source) {
-                source.connect(stemStreamDestinations[index]);
-              }
-
-        }
-
-    // Download Blob
-    function downloadBlob(blobData, filename) {
-        const blob = new Blob([blobData], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
-
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = filename;
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-
-        URL.revokeObjectURL(url);
+    function recordStem(source, index) {
+    if (source && stemStreamDestinations[index]) {
+        source.connect(stemStreamDestinations[index]);
     }
+}
+
+function downloadBlob(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    
+    // Trigger download and cleanup
+    anchor.click();
+    setTimeout(() => {
+        document.body.removeChild(anchor);
+        window.URL.revokeObjectURL(url);
+    }, 100);
+}
            // Event Listeners
 
            scaleSelector.addEventListener('change', (e) => {
