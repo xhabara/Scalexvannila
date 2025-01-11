@@ -310,6 +310,14 @@
 </div>
 
 <script>
+    // Define recordMix and recordStem at the very beginning of the script
+    function recordMix(source) {
+    //do nothing
+    }
+    function recordStem(source, index) {
+        // Do nothing
+        }
+
   const audioContext = new (window.AudioContext || window.webkitAudioContext)({
     sampleRate: 44100,
   });
@@ -422,9 +430,9 @@
 
    // Reverb setup
   let reverbEffect = audioContext.createConvolver();
-  loadImpulseResponse('/assets/ir.wav').then(buffer => {
-      reverbEffect.buffer = buffer;
-  });
+    loadImpulseResponse('/assets/ir.wav').then(buffer => {
+        reverbEffect.buffer = buffer;
+    });
 
 
    // Limiter setup
@@ -464,21 +472,26 @@
     osc.start();
   }
 
+   // Utility Functions
+    async function loadImpulseResponse(url) {
+        try {
+        return fetch(url)
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer));
+           } catch (e) {
+            console.error("Error decoding audio data:", e);
+           }
+       }
 
-
-    // Utility Functions
-
-  function loadImpulseResponse(url) {
-      return fetch(url)
-          .then(response => response.arrayBuffer())
-          .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer));
-  }
-
-  async function loadSample(url) {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      return await audioContext.decodeAudioData(arrayBuffer);
-  }
+      async function loadSample(url) {
+          try {
+             const response = await fetch(url);
+            const arrayBuffer = await response.arrayBuffer();
+            return await audioContext.decodeAudioData(arrayBuffer);
+           } catch (e) {
+              console.error("Error decoding audio data:", e);
+           }
+      }
 
     function createChannelControls(index) {
         const channelDiv = document.createElement('div');
@@ -523,7 +536,6 @@
         });
         muteCheckbox.addEventListener('change', () => toggleMute(index));
     }
-
    function setupChannels() {
         for (let i = 0; i < 3; i++) {
           createChannelControls(i);
@@ -537,62 +549,48 @@
         octaveOscDisplay.textContent = appState.osc.octave;
 
     }
+     function playRandomPitch(index) {
+        if (!appState.masterSampleBuffer || appState.channels[index].muted) return;
 
-  function playRandomPitch(index) {
-      if (!appState.masterSampleBuffer || appState.channels[index].muted) return;
+        const source = audioContext.createBufferSource();
+        source.buffer = appState.masterSampleBuffer;
 
-      const source = audioContext.createBufferSource();
-      source.buffer = appState.masterSampleBuffer;
+        const gainNode = audioContext.createGain();
+        source.connect(gainNode);
 
-      const gainNode = audioContext.createGain();
-      source.connect(gainNode);
+        const panNode = audioContext.createStereoPanner();
+        panNode.pan.value =  appState.channels[index].pan;
+        gainNode.connect(panNode);
+          panNode.connect(appState.reverbEnabled ? reverbEffect : masterGain);
 
+        let scale = scales[appState.scale];
 
-      const panNode = audioContext.createStereoPanner();
-      panNode.pan.value =  appState.channels[index].pan;
-      gainNode.connect(panNode);
-        panNode.connect(appState.reverbEnabled ? reverbEffect : masterGain);
+        let randomPitch = scale[Math.floor(Math.random() * scale.length)];
+        let octaveAdjustment = appState.channels[index].octave * 12;
 
-
-    let scale = scales[appState.scale];
-
-    let randomPitch = scale[Math.floor(Math.random() * scale.length)];
-    let octaveAdjustment = appState.channels[index].octave * 12;
-
-    let playbackRate = Math.pow(2, (randomPitch + octaveAdjustment) / 12);
-    source.playbackRate.value = playbackRate;
-       gainNode.gain.value =  appState.sampleVolume;
+        let playbackRate = Math.pow(2, (randomPitch + octaveAdjustment) / 12);
+        source.playbackRate.value = playbackRate;
+        gainNode.gain.value =  appState.sampleVolume;
 
         source.start(0);
 
-      if (appState.isRecording) {
-         recordMix(source);
-      }
-
-    if (appState.isRecording){
-        recordStem(source, index);
+       if (appState.isRecording){
+            recordStem(source, index);
+       }
     }
-  }
-
-
-  function playOscillatorNote() {
-    if (!osc) {
-      initOscillator();
+    function playOscillatorNote() {
+        if (!osc) {
+          initOscillator();
+        }
+        let scale = scales[appState.scale];
+        let randomPitch = scale[Math.floor(Math.random() * scale.length)];
+        while (randomPitch === -1) {
+          randomPitch = scale[Math.floor(Math.random() * scale.length)];
+        }
+        let octaveAdjustment = appState.osc.octave * 12;
+        let newFreq = 440 * Math.pow(2, (randomPitch + octaveAdjustment) / 12);
+        osc.frequency.setValueAtTime(newFreq, audioContext.currentTime);
     }
-    let scale = scales[appState.scale];
-    let randomPitch = scale[Math.floor(Math.random() * scale.length)];
-    while (randomPitch === -1) {
-      randomPitch = scale[Math.floor(Math.random() * scale.length)];
-    }
-    let octaveAdjustment = appState.osc.octave * 12;
-    let newFreq = 440 * Math.pow(2, (randomPitch + octaveAdjustment) / 12);
-    osc.frequency.setValueAtTime(newFreq, audioContext.currentTime);
-
-    if (appState.isRecording) {
-      recordMix(osc);
-    }
-  }
-
   function toggleAutoLoop(index) {
     const channel = appState.channels[index];
     const autoButton = document.getElementById(`autoButton${index}`);
@@ -606,8 +604,7 @@
         autoButton.style.backgroundColor = '#333333';
     }
 }
-
-   function startLoop(index) {
+     function startLoop(index) {
     const channel = appState.channels[index];
        const rhythm = rhythmPatterns[appState.rhythmPattern];
         let rhythmIndex = 0;
@@ -659,9 +656,6 @@
         appState.osc.intervalId = null;
     }
   }
-
-
-
    function changeOctave(index, displayElement) {
     const octaves = [0, -1, -2, 1, 2];
     const signs = ["0", "-", "--", "+", "++"];
@@ -670,14 +664,13 @@
     appState.channels[index].octave = octaves[currentIndex];
     displayElement.textContent = signs[currentIndex];
 }
-
   function changeOscOctave() {
     const octaves = [0, -1, -2, 1, 2];
     const signs = ["0", "-", "--", "+", "++"];
     let currentIndex = octaves.indexOf(appState.osc.octave);
     currentIndex = (currentIndex + 1) % octaves.length;
     appState.osc.octave = octaves[currentIndex];
-    octaveOscDisplay.textContent = signs[currentIndex];
+        octaveOscDisplay.textContent = signs[currentIndex];
 }
 
   function toggleMute(index) {
@@ -775,15 +768,19 @@ function toggleAutoTempo() {
 
     // Recording Functions
 
-    function initRecording () {
+      function initRecording () {
              mixStreamDestination = audioContext.createMediaStreamDestination();
-            masterGain.connect(mixStreamDestination);
-
+            
              for (let i=0; i < 3; i++) {
                  stemStreamDestinations[i] = audioContext.createMediaStreamDestination();
             }
+             masterGain.connect(masterLimiter);
         }
 
+    let mixRecorder;
+    let mixStreamDestination;
+    let stemStreamDestinations = [];
+     let stemRecorders = [];
 
            function startRecording() {
                if(mixStreamDestination == undefined){
@@ -792,6 +789,8 @@ function toggleAutoTempo() {
                appState.isRecording = true;
                recordMixButton.textContent = 'Stop Mix';
                appState.recordMixBuffer = [];
+                masterGain.disconnect();
+                masterGain.connect(mixStreamDestination);
 
                mixRecorder = new MediaRecorder(mixStreamDestination.stream, {mimeType: 'audio/wav'});
                mixRecorder.ondataavailable = (event) => {
@@ -801,44 +800,38 @@ function toggleAutoTempo() {
                };
 
                mixRecorder.onstop = () => {
+                  masterGain.disconnect();
+                   masterGain.connect(masterLimiter);
                    saveMix();
                }
 
                mixRecorder.start(100); // Start recording
 
            }
-
-
-
       function startStemRecording(){
           appState.isRecording = true;
           recordStemsButton.textContent = 'Stop Recording Stems';
            appState.stemRecordings = [[], [], []];
             for (let i = 0; i < 3; i++) {
-               stemRecorders[i] = new MediaRecorder(stemStreamDestinations[i].stream, {mimeType: 'audio/wav'});
-               stemRecorders[i].ondataavailable = (event) => {
-                     if (event.data.size > 0) {
-                         appState.stemRecordings[i].push(event.data);
-                     }
-                  };
-               stemRecorders[i].onstop = () => {
-                 saveStems();
-               };
-                  stemRecorders[i].start(100); // Start recording
-            }
-      }
+                 stemRecorders[i] = new MediaRecorder(stemStreamDestinations[i].stream, {mimeType: 'audio/wav'});
+                 stemRecorders[i].ondataavailable = (event) => {
+                       if (event.data.size > 0) {
+                           appState.stemRecordings[i].push(event.data);
+                       }
+                    };
+                 stemRecorders[i].onstop = () => {
+                   saveStems();
+                 };
+               }
+            masterGain.disconnect();
+            masterGain.connect(masterLimiter);
 
-
-
-
+         }
         function stopRecording() {
             appState.isRecording = false;
             recordMixButton.textContent = 'Start Mix';
             mixRecorder.stop();
         }
-
-
-
          function stopStemRecording() {
                 appState.isRecording = false;
                 recordStemsButton.textContent = 'Record Stems';
@@ -848,101 +841,50 @@ function toggleAutoTempo() {
                        recorder.stop();
                        }
               });
+            masterGain.disconnect();
+             masterGain.connect(masterLimiter);
             stemRecorders = [];
         }
 
-    // Toggle Recording
     function toggleRecording() {
-        if (appState.isRecording) {
+       if (appState.isRecording) {
             stopRecording();
-        } else {
+       } else {
             startRecording();
-        }
+       }
     }
-
-    // Save Mix
+    function toggleStemRecording() {
+        if (appState.isRecording) {
+            stopStemRecording();
+       } else {
+            startStemRecording();
+       }
+    }
+    
     function saveMix() {
-        if (appState.recordMixBuffer.length === 0) return;
+             if (appState.recordMixBuffer.length === 0) return;
 
-        const mixBuffer = generateAudioBuffer(appState.recordMixBuffer);
-        const wavData = generateWavData(mixBuffer);
-        downloadBlob(wavData, `Mix_${new Date().toISOString().slice(0, 10)}.wav`);
-        appState.recordMixBuffer = [];
-    }
+              const blob = new Blob(appState.recordMixBuffer, { type: 'audio/wav' });
+               downloadBlob(blob, `Mix_${new Date().toISOString().slice(0, 10)}.wav`);
+               appState.recordMixBuffer = [];
+        }
 
-    // Save Stems
-    function saveStems() {
-        appState.stemRecordings.forEach((stemData, index) => {
+        // Save Stems
+        function saveStems() {
+          appState.stemRecordings.forEach((stemData, index) => {
             if (stemData.length > 0) {
-                const stemBuffer = generateAudioBuffer(stemData);
-                const wavData = generateWavData(stemBuffer);
-                downloadBlob(wavData, `Stem_${index + 1}_${new Date().toISOString().slice(0, 10)}.wav`);
-            }
-        });
+              const blob = new Blob(stemData, { type: 'audio/wav' });
+              downloadBlob(blob, `Stem_${index + 1}_${new Date().toISOString().slice(0, 10)}.wav`);
+               }
+              });
         appState.stemRecordings = [[], [], []];
-    }
-
-    // Generate Audio Buffer
-    function generateAudioBuffer(recordingData) {
-        const channels = 2;
-        const sampleRate = audioContext.sampleRate;
-        const frameCount = recordingData.length / channels;
-
-        const audioBuffer = audioContext.createBuffer(channels, frameCount, sampleRate);
-        for (let i = 0; i < channels; i++) {
-            const channelData = audioBuffer.getChannelData(i);
-            for (let j = 0; j < frameCount; j++) {
-                channelData[j] = recordingData[j * channels + i];
-            }
         }
-        return audioBuffer;
-    }
+            function recordStem(source, index) {
+              if(source) {
+                source.connect(stemStreamDestinations[index]);
+              }
 
-    // Generate WAV Data
-    function generateWavData(audioBuffer) {
-        const numChannels = audioBuffer.numberOfChannels;
-        const sampleRate = audioBuffer.sampleRate;
-        const numFrames = audioBuffer.length;
-
-        const wavHeaderSize = 44;
-        const buffer = new ArrayBuffer(wavHeaderSize + numFrames * numChannels * 2);
-        const view = new DataView(buffer);
-
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, buffer.byteLength - 8, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true); // PCM header size
-        view.setUint16(20, 1, true); // PCM format
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numChannels * 2, true); // Byte rate
-        view.setUint16(32, numChannels * 2, true); // Block align
-        view.setUint16(34, 16, true); // Bits per sample
-        writeString(view, 36, 'data');
-        view.setUint32(40, numFrames * numChannels * 2, true);
-
-        let offset = wavHeaderSize;
-        for (let i = 0; i < numFrames; i++) {
-            for (let ch = 0; ch < numChannels; ch++) {
-                const sample = audioBuffer.getChannelData(ch)[i];
-                const intSample = Math.max(-1, Math.min(1, sample)) < 0
-                    ? sample * 0x8000
-                    : sample * 0x7FFF;
-                view.setInt16(offset, intSample, true);
-                offset += 2;
-            }
         }
-
-        return buffer;
-    }
-
-    // Helper Function to Write Strings
-    function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
-        }
-    }
 
     // Download Blob
     function downloadBlob(blobData, filename) {
@@ -958,38 +900,9 @@ function toggleAutoTempo() {
 
         URL.revokeObjectURL(url);
     }
-
-
-
-           function toggleRecording() {
-               appState.isRecording = !appState.isRecording;
-
-             if(appState.isRecording){
-                   appState.recordMixStartTime = performance.now();
-                   recordMixButton.textContent = 'Stop Recording';
-             } else {
-                    saveAndExport();
-                    recordMixButton.textContent = 'Start Recording';
-             }
-
-
-             }
-
-             function toggleStemRecording() {
-    appState.isRecording = !appState.isRecording;
-    if (!appState.isRecording) {
-        saveStems();
-        recordStemsButton.textContent = 'Record Stems';
-    } else {
-        appState.stemRecordings = [[],[],[]];
-        recordStemsButton.textContent = 'Stop Recording Stems';
-    }
-}
-
-
            // Event Listeners
 
-             scaleSelector.addEventListener('change', (e) => {
+           scaleSelector.addEventListener('change', (e) => {
                appState.scale = e.target.value;
              });
 
@@ -1003,9 +916,7 @@ function toggleAutoTempo() {
              syncLoops();
            });
 
-
            autoTempoCheckbox.addEventListener('change', toggleAutoTempo);
-
 
            reverbCheckbox.addEventListener('change', toggleReverb);
            syncCheckbox.addEventListener('change', () => {
@@ -1052,8 +963,6 @@ function toggleAutoTempo() {
 
           setupChannels();
              updateDisplayValues();
-
-
          </script>
          </body>
          </html>
